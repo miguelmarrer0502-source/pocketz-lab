@@ -231,6 +231,62 @@ export class AppController extends BaseController {
         }
     }
 
+    // Set or remove custom domain for an app
+    static async setCustomDomain(request: Request, env: Env, _ctx: ExecutionContext, context: RouteContext): Promise<ControllerResponse<ApiResponse<{ domain: string | null; verified: boolean }>>> {
+        try {
+            const user = context.user!;
+            const appId = context.pathParams.id;
+
+            if (!appId) {
+                return AppController.createErrorResponse('App ID is required', 400);
+            }
+
+            const bodyResult = await AppController.parseJsonBody(request);
+            if (!bodyResult.success) {
+                return bodyResult.response! as ControllerResponse<ApiResponse<{ domain: string | null; verified: boolean }>>;
+            }
+
+            const rawDomain = (bodyResult.data as { domain?: string })?.domain ?? null;
+
+            // Normalize and validate domain if provided
+            if (rawDomain !== null) {
+                const domain = rawDomain.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
+                const domainRegex = /^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/;
+                if (!domainRegex.test(domain)) {
+                    return AppController.createErrorResponse('Invalid domain format', 400);
+                }
+
+                const appService = new AppService(env);
+
+                // Verify this user owns the app
+                const existing = await appService.getAppByCustomDomain(domain);
+                if (existing && existing.id !== appId) {
+                    return AppController.createErrorResponse('Domain is already in use by another app', 409);
+                }
+
+                const updated = await appService.setCustomDomain(appId, domain);
+
+                if (!updated) {
+                    return AppController.createErrorResponse('App not found', 404);
+                }
+
+                return AppController.createSuccessResponse({
+                    domain: updated.customDomain,
+                    verified: updated.customDomainVerified ?? false,
+                });
+            }
+
+            // domain: null means remove
+            const appService = new AppService(env);
+            await appService.setCustomDomain(appId, null);
+
+            return AppController.createSuccessResponse({ domain: null, verified: false });
+        } catch (error) {
+            this.logger.error('Error setting custom domain:', error);
+            return AppController.createErrorResponse('Failed to set custom domain', 500);
+        }
+    }
+
     // Delete app
     static async deleteApp(_request: Request, env: Env, _ctx: ExecutionContext, context: RouteContext): Promise<ControllerResponse<ApiResponse<AppDeleteData>>> {
         try {
