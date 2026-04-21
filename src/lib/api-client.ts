@@ -511,6 +511,23 @@ class ApiClient {
 	}
 
 	/**
+	 * Set or remove a custom domain for an app.
+	 * Pass null to remove the existing domain.
+	 */
+	async setCustomDomain(
+		appId: string,
+		domain: string | null,
+	): Promise<ApiResponse<{ domain: string | null; verified: boolean }>> {
+		return this.request<{ domain: string | null; verified: boolean }>(
+			`/api/apps/${appId}/custom-domain`,
+			{
+				method: 'PUT',
+				body: { domain },
+			},
+		);
+	}
+
+	/**
 	 * Delete an app
 	 */
 	async deleteApp(appId: string): Promise<ApiResponse<AppDeleteData>> {
