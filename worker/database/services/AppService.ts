@@ -60,6 +60,52 @@ export class AppService extends BaseService {
         return app;
     }
     /**
+     * Set a custom domain for an app.
+     * Clears the domain if null is passed.
+     */
+    async setCustomDomain(appId: string, domain: string | null): Promise<schema.App> {
+        const [updated] = await this.database
+            .update(schema.apps)
+            .set({
+                customDomain: domain,
+                customDomainVerified: false,
+                customDomainSetAt: domain ? new Date() : null,
+                updatedAt: new Date(),
+            })
+            .where(eq(schema.apps.id, appId))
+            .returning();
+        return updated;
+    }
+
+    /**
+     * Mark a custom domain as verified for an app.
+     */
+    async verifyCustomDomain(appId: string): Promise<schema.App> {
+        const [updated] = await this.database
+            .update(schema.apps)
+            .set({
+                customDomainVerified: true,
+                updatedAt: new Date(),
+            })
+            .where(eq(schema.apps.id, appId))
+            .returning();
+        return updated;
+    }
+
+    /**
+     * Look up an app by its custom domain.
+     * Used by the dispatch worker for hostname-based routing.
+     */
+    async getAppByCustomDomain(domain: string): Promise<schema.App | null> {
+        const [app] = await this.database
+            .select()
+            .from(schema.apps)
+            .where(eq(schema.apps.customDomain, domain))
+            .limit(1);
+        return app ?? null;
+    }
+
+    /**
      * Get public apps with pagination and sorting
      */
     async getPublicApps(options: PublicAppQueryOptions = {}): Promise<PaginatedResult<EnhancedAppData>> {
