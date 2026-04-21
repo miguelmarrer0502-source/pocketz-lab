@@ -14,8 +14,7 @@
 	"assets": {
 		"directory": "dist",
 		"not_found_handling": "single-page-application",
-		// "run_worker_first": ["\!/src/*", "\!/api/docs/*"],
-        "run_worker_first": true,
+		"run_worker_first": true,
         "binding": "ASSETS"
 	},
 	"observability": {
@@ -45,8 +44,7 @@
     "dispatch_namespaces": [
         {
             "binding": "DISPATCHER",
-            "namespace": "vibesdk-default-namespace",
-            "remote": true
+            "namespace": "pocketz-lab-default-namespace"
         }
     ],
 	"d1_databases": [
@@ -82,7 +80,7 @@
       {
         "binding": "TEMPLATES_BUCKET",
         "bucket_name": "pocketz-lab-templates",
-        "remote": true,"preview_bucket_name": "pocketz-lab-templates"
+        "remote": true
       }
     ],
     "kv_namespaces": [
