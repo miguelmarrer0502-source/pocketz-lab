@@ -158,6 +158,11 @@ export const apps = sqliteTable('apps', {
     // Deployment Information
     deploymentId: text('deployment_id'), // Deployment ID (extracted from deployment URL)
     
+    // Custom Domain
+    customDomain: text('custom_domain'), // User-provided custom domain (e.g. myapp.com)
+    customDomainVerified: integer('custom_domain_verified', { mode: 'boolean' }).default(false),
+    customDomainSetAt: integer('custom_domain_set_at', { mode: 'timestamp' }),
+
     // GitHub Repository Integration
     githubRepositoryUrl: text('github_repository_url'), // GitHub repository URL
     githubRepositoryVisibility: text('github_repository_visibility', { enum: ['public', 'private'] }), // Repository visibility
