@@ -12,26 +12,25 @@ export interface RateLimitConfigBase {
 export interface KVRateLimitConfig extends RateLimitConfigBase {
 	store: RateLimitStore.KV;
 	limit: number;
-	period: number; // in seconds
-	burst?: number; // optional burst limit
-	burstWindow?: number; // burst window in seconds (default: 60)
-	bucketSize?: number; // time bucket size in seconds (default: 10)
+	period: number;
+	burst?: number;
+	burstWindow?: number;
+	bucketSize?: number;
 }
 
 export interface RLRateLimitConfig extends RateLimitConfigBase {
 	store: RateLimitStore.RATE_LIMITER;
 	bindingName: string;
-	// Rate limits via bindings are configurable only via wrangler configs
 }
 
 export interface DORateLimitConfig extends RateLimitConfigBase {
 	store: RateLimitStore.DURABLE_OBJECT;
 	limit: number;
-	period: number; // in seconds
-	burst?: number; // optional burst limit
-	burstWindow?: number; // burst window in seconds (default: 60)
-	bucketSize?: number; // time bucket size in seconds (default: 10)
-	dailyLimit?: number; // optional rolling 24h limit
+	period: number;
+	burst?: number;
+	burstWindow?: number;
+	bucketSize?: number;
+	dailyLimit?: number;
 }
 
 export type LLMCallsRateLimitConfig = (DORateLimitConfig) & {
@@ -70,17 +69,17 @@ export const DEFAULT_RATE_LIMIT_SETTINGS: RateLimitSettings = {
 		bindingName: 'AUTH_RATE_LIMITER',
 	},
 	appCreation: {
-		enabled: true,
+		enabled: false,
 		store: RateLimitStore.DURABLE_OBJECT,
 		limit: 3,
 		dailyLimit: 3,
-		period: 24 * 60 * 60, // 24 hours
+		period: 24 * 60 * 60,
 	},
 	llmCalls: {
-		enabled: true,
+		enabled: false,
 		store: RateLimitStore.DURABLE_OBJECT,
 		limit: 250,
-		period: 24 * 60 * 60, // 24 hours
+		period: 24 * 60 * 60,
 		dailyLimit: 250,
 		excludeBYOKUsers: true,
 	},
