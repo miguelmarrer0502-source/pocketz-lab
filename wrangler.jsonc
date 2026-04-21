@@ -14,7 +14,7 @@
 	"assets": {
 		"directory": "dist",
 		"not_found_handling": "single-page-application",
-		// "run_worker_first": ["!/src/*", "!/api/docs/*"],
+		// "run_worker_first": ["\!/src/*", "\!/api/docs/*"],
         "run_worker_first": true,
         "binding": "ASSETS"
 	},
@@ -114,9 +114,6 @@
             "remote": true
         }
     ],
-    // "placement": {
-    //   "mode": "smart"
-    // },
 	"migrations": [
 		{
 			"new_sqlite_classes": [
@@ -140,13 +137,8 @@
 	],
 	"routes": [
         {
-            "pattern": "build.cloudflare.dev",
+            "pattern": "pocketzlab.com",
             "custom_domain": true
-        },
-        {
-            "pattern": "*build-preview.cloudflare.dev/*",
-            "custom_domain": false,
-            "zone_id": "db01fac4261b2604aacad8410443a3e2"
         }
     ],
 	"vars": {
