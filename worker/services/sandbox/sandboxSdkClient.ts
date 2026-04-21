@@ -11,7 +11,7 @@ import {
     ExecuteCommandsResponse,
     RuntimeErrorResponse,
     ClearErrorsResponse,
-    StaticAnalysisResponse,
+    StaticAnalysisResponse
     DeploymentResult,
     FileTreeNode,
     RuntimeError,
