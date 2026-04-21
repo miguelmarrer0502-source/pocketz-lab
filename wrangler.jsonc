@@ -21,22 +21,6 @@
 		"enabled": true,
         "head_sampling_rate": 1,
 	},
-    "unsafe": {
-        "bindings": [
-            {
-                "name": "API_RATE_LIMITER",
-                "type": "ratelimit",
-                "namespace_id": "2101",
-                "simple": { "limit": 10000, "period": 60 }
-            },
-            {
-                "name": "AUTH_RATE_LIMITER",
-                "type": "ratelimit",
-                "namespace_id": "2102",
-                "simple": { "limit": 1000, "period": 60 }
-            }
-        ]
-    },
 	"ai": {
 		"binding": "AI",
         "remote": true
