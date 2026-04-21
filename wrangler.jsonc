@@ -14,13 +14,20 @@
 	"assets": {
 		"directory": "dist",
 		"not_found_handling": "single-page-application",
-		"run_worker_first": true,
+		// "run_worker_first": ["!/src/*", "!/api/docs/*"],
+        "run_worker_first": true,
         "binding": "ASSETS"
 	},
 	"observability": {
 		"enabled": true,
         "head_sampling_rate": 1,
 	},
+	/**
+	 * Bindings
+	 * Bindings allow your Worker to interact with resources on the Cloudflare Developer Platform, including
+	 * databases, object storage, AI inference, real-time communication and more.
+	 * https://developers.cloudflare.com/workers/runtime-apis/bindings/
+	 */
 	"ai": {
 		"binding": "AI",
         "remote": true
@@ -28,9 +35,26 @@
     "dispatch_namespaces": [
         {
             "binding": "DISPATCHER",
-            "namespace": "pocketz-lab-default-namespace"
+            "namespace": "pocketz-lab-default-namespace",
+            "remote": true
         }
     ],
+	"containers": [
+		{
+			"class_name": "UserAppSandboxService",
+			"image": "./SandboxDockerfile",
+            // "image": "registry.cloudflare.com/vibesdk-production-userappsandboxservice:cfe197fc",
+            // Altering max_instances value will have no effect. Please use the MAX_SANDBOX_INSTANCES var instead.
+			"max_instances": 1400,
+            // ATTENTION: Altering instance_type value will have no effect. Please use the SANDBOX_INSTANCE_TYPE var instead.
+            "instance_type": {
+                "vcpu": 4,
+                "memory_mib": 8192,
+                "disk_mb": 10240
+            },
+            "rollout_step_percentage": 100
+		}
+	],
 	"d1_databases": [
 		{
 			"binding": "DB",
@@ -64,7 +88,7 @@
       {
         "binding": "TEMPLATES_BUCKET",
         "bucket_name": "pocketz-lab-templates",
-        "remote": true
+        "remote": true,"preview_bucket_name": "pocketz-lab-templates"
       }
     ],
     "kv_namespaces": [
@@ -74,6 +98,9 @@
             "remote": true
         }
     ],
+    // "placement": {
+    //   "mode": "smart"
+    // },
 	"migrations": [
 		{
 			"new_sqlite_classes": [
