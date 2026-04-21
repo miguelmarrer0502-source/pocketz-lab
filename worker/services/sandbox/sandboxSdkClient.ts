@@ -1788,10 +1788,14 @@ export class SandboxSdkClient extends BaseSandboxService {
             this.logger.info('Reading worker script');
             const session = await this.getInstanceSession(instanceId);
 
-            const candidatePaths: string[] = [];
+                        const candidatePaths: string[] = [];
             if (config.main) {
                 const derivedPath = `dist/${config.main.replace(/\.ts$/, '.js').replace(/^\//, '')}`;
                 candidatePaths.push(derivedPath);
+            }
+            // wrangler build outputs to .wrangler/dist/index.js
+            if (!candidatePaths.includes('.wrangler/dist/index.js')) {
+                candidatePaths.push('.wrangler/dist/index.js');
             }
             if (!candidatePaths.includes('dist/index.js')) {
                 candidatePaths.push('dist/index.js');
@@ -1800,17 +1804,22 @@ export class SandboxSdkClient extends BaseSandboxService {
             let workerFile: Awaited<ReturnType<typeof session.readFile>> | null = null;
             let resolvedWorkerPath = '';
             for (const relPath of candidatePaths) {
-                const attempt = await session.readFile(`/workspace/${instanceId}/${relPath}`);
-                if (attempt.success) {
-                    workerFile = attempt;
-                    resolvedWorkerPath = relPath;
-                    break;
+                try {
+                    const attempt = await session.readFile(`/workspace/${instanceId}/${relPath}`);
+                    if (attempt.success) {
+                        workerFile = attempt;
+                        resolvedWorkerPath = relPath;
+                        break;
+                    }
+                } catch (_e) {
+                    // @cloudflare/sandbox readFile throws FileNotFoundError when the file
+                    // doesn't exist rather than returning {success:false} — catch and try next path
                 }
                 this.logger.info(`Worker script not found at ${relPath}, trying next path`);
             }
 
             if (!workerFile || !workerFile.success) {
-                throw new Error(`Worker script not found. Tried: ${candidatePaths.join(', ')}. Please build the project first.`);
+                throw new Error(`Worker script not found. Tried: ${candidatePaths.join(', ')}. Ensure the project built successfully.`);
             }
 
             this.logger.info('Worker script found', { path: resolvedWorkerPath });
