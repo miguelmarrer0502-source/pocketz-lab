@@ -1783,13 +1783,37 @@ export class SandboxSdkClient extends BaseSandboxService {
             this.logger.info('Worker compatibility', { compatibilityDate: config.compatibility_date });
             
             // Step 3: Read worker script from dist
+            // Try multiple output paths - @cloudflare/vite-plugin outputs to dist/<main>.js
+            // (e.g. dist/worker/index.js if main="worker/index.ts"), while simpler setups use dist/index.js
             this.logger.info('Reading worker script');
             const session = await this.getInstanceSession(instanceId);
-            const workerFile = await session.readFile(`/workspace/${instanceId}/dist/index.js`);
-            if (!workerFile.success) {
-                throw new Error(`Worker script not found at /${instanceId}/dist/index.js. Please build the project first.`);
+
+            const candidatePaths: string[] = [];
+            if (config.main) {
+                const derivedPath = `dist/${config.main.replace(/\.ts$/, '.js').replace(/^\//, '')}`;
+                candidatePaths.push(derivedPath);
             }
-            
+            if (!candidatePaths.includes('dist/index.js')) {
+                candidatePaths.push('dist/index.js');
+            }
+
+            let workerFile: Awaited<ReturnType<typeof session.readFile>> | null = null;
+            let resolvedWorkerPath = '';
+            for (const relPath of candidatePaths) {
+                const attempt = await session.readFile(`/workspace/${instanceId}/${relPath}`);
+                if (attempt.success) {
+                    workerFile = attempt;
+                    resolvedWorkerPath = relPath;
+                    break;
+                }
+                this.logger.info(`Worker script not found at ${relPath}, trying next path`);
+            }
+
+            if (!workerFile || !workerFile.success) {
+                throw new Error(`Worker script not found. Tried: ${candidatePaths.join(', ')}. Please build the project first.`);
+            }
+
+            this.logger.info('Worker script found', { path: resolvedWorkerPath });
             const workerContent = workerFile.content;
             this.logger.info('Worker script loaded', { sizeKB: (workerContent.length / 1024).toFixed(2) });
             
