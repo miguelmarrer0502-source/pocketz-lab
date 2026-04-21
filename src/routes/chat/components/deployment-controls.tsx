@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState } from 'react';
 import { Button } from '../../../components/primitives/button';
-import { Loader, ExternalLink, Zap, Check, Globe, Lock, Share2 } from 'lucide-react';
+import { Loader, ExternalLink, Zap, Check, Globe, Lock, Share2, Link } from 'lucide-react';
 import clsx from 'clsx';
 import { apiClient } from '../../../lib/api-client';
 import { toast } from 'sonner';
@@ -14,20 +14,22 @@ interface DeploymentControlsProps {
 	instanceId: string;
 	isRedeployReady: boolean;
 	deploymentError?: string;
-	
+
 	// App state
 	appId?: string;
 	appVisibility?: 'public' | 'private';
-	
+	appCustomDomain?: string | null;
+
 	// Generation state (kept for compatibility but pause button will not be rendered)
 	isGenerating: boolean;
 	isPaused: boolean;
-	
+
 	// Actions
 	onDeploy: (instanceId: string) => void;
 	onStopGeneration: () => void;
 	onResumeGeneration: () => void;
 	onVisibilityUpdate?: (newVisibility: 'public' | 'private') => void;
+	onCustomDomainUpdate?: (domain: string | null) => void;
 }
 
 // Deployment state enum for better state management
@@ -49,12 +51,17 @@ export function DeploymentControls({
 	deploymentError,
 	appId,
 	appVisibility = 'private',
+	appCustomDomain,
 	onDeploy,
 	onVisibilityUpdate,
+	onCustomDomainUpdate,
 }: DeploymentControlsProps) {
 	const [isDeployButtonClicked, setIsDeployButtonClicked] = useState(false);
 	const [isUpdatingVisibility, setIsUpdatingVisibility] = useState(false);
 	const [localVisibility, setLocalVisibility] = useState(appVisibility);
+	const [customDomainInput, setCustomDomainInput] = useState(appCustomDomain ?? '');
+	const [isSavingDomain, setIsSavingDomain] = useState(false);
+	const [showDomainSection, setShowDomainSection] = useState(false);
 	const deploymentRef = useRef<HTMLDivElement>(null);
 
 	const { copied: urlCopied, copy: copyUrl } = useCopyToClipboard();
@@ -111,6 +118,45 @@ export function DeploymentControls({
 		}
 		
 		onDeploy(instanceId);
+	};
+
+	const saveCustomDomain = async (domain: string | null) => {
+		if (!appId) {
+			toast.error('App ID not found');
+			return;
+		}
+
+		try {
+			setIsSavingDomain(true);
+			const response = await apiClient.setCustomDomain(appId, domain);
+
+			if (response.success) {
+				const saved = response.data?.domain ?? null;
+				onCustomDomainUpdate?.(saved);
+
+				if (saved) {
+					toast.success('Custom domain set. Point your DNS CNAME to pocketzlab.com to go live.');
+				} else {
+					toast.success('Custom domain removed.');
+					setCustomDomainInput('');
+				}
+			} else {
+				toast.error(response.error?.message || 'Failed to update custom domain');
+			}
+		} catch {
+			toast.error('Failed to update custom domain');
+		} finally {
+			setIsSavingDomain(false);
+		}
+	};
+
+	const handleSaveCustomDomain = () => {
+		const trimmed = customDomainInput.trim().toLowerCase().replace(/^https?:\/\//, '').replace(/\/$/, '');
+		saveCustomDomain(trimmed || null);
+	};
+
+	const handleRemoveCustomDomain = () => {
+		saveCustomDomain(null);
 	};
 
 	const handleToggleVisibility = async () => {
@@ -351,6 +397,50 @@ export function DeploymentControls({
 						</div>
 					)}
 					
+					{/* Custom Domain Section */}
+					<div className="mb-3">
+						<button
+							onClick={() => setShowDomainSection(prev => !prev)}
+							className="flex items-center gap-1.5 text-xs text-green-600 dark:text-green-400 font-medium hover:text-green-700 dark:hover:text-green-300 transition-colors"
+						>
+							<Link className="w-3 h-3" />
+							{appCustomDomain ? `Custom domain: ${appCustomDomain}` : 'Connect a custom domain'}
+						</button>
+
+						{showDomainSection && (
+							<div className="mt-2 bg-bg-3/60 dark:bg-bg-4/60 border border-green-200/40 dark:border-green-800/20 rounded-md p-3">
+								<p className="text-xs text-text-tertiary mb-2">
+									Enter your domain, then add a CNAME record pointing to <code className="text-xs bg-bg-4 dark:bg-bg-3 px-1 rounded">pocketzlab.com</code> in your DNS provider.
+								</p>
+								<div className="flex gap-2">
+									<input
+										type="text"
+										value={customDomainInput}
+										onChange={(e) => setCustomDomainInput(e.target.value)}
+										placeholder="myapp.yourdomain.com"
+										className="flex-1 text-sm bg-bg-4 dark:bg-bg-3 border border-border-primary rounded px-2 py-1.5 text-text-primary placeholder:text-text-tertiary outline-none focus:border-green-400 dark:focus:border-green-600 transition-colors"
+									/>
+									<Button
+										onClick={handleSaveCustomDomain}
+										disabled={isSavingDomain}
+										variant="secondary"
+										className="h-8 px-3 text-xs bg-green-600 hover:bg-green-700 text-white border-green-600 flex-shrink-0"
+									>
+										{isSavingDomain ? <Loader className="w-3 h-3 animate-spin" /> : 'Save'}
+									</Button>
+								</div>
+								{appCustomDomain && (
+									<button
+										onClick={handleRemoveCustomDomain}
+										className="mt-1.5 text-xs text-red-500 hover:text-red-600 dark:text-red-400 transition-colors"
+									>
+										Remove domain
+									</button>
+								)}
+							</div>
+						)}
+					</div>
+
 					{/* Action Buttons - Enhanced with visibility toggle */}
 					<div className={clsx(
 						"grid gap-3",
